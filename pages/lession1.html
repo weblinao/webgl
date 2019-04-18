@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>WebGL第一课：从一个点开始</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/common.css">
+  </head>
+  <body>
+    <!-- 顶点着色器源码 -->
+    <script type="shader-source" id="vertexShader">
+      void main() {
+        // 声明顶点位置
+        gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
+        // 声明要绘制的点的大小
+        gl_PointSize = 10.0;
+      }
+    </script>
+
+    <!-- 片元着色器源码 -->
+    <script type="shader-source" id=fragmentShader>
+      void main() {
+        // 设置像素颜色为红色
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+      }
+    </script>
+
+    <canvas id="canvas"></canvas>
+    <script type="module">
+      import wh from '../js/webgl-helper.js'
+      // 1.获取WebGL绘图环境 ---------
+      let canvas = wh.getCanvas('canvas');
+      let gl = wh.getWebGLContext(canvas);
+
+      // 2.创建顶点着色器对象 ---------
+      let vertexShader = wh.createShaderFromScript(gl, gl.VERTEX_SHADER, 'vertexShader');
+
+      // 3.创建片元着色器对象 ---------
+      let fragmentShader = wh.createShaderFromScript(gl, gl.FRAGMENT_SHADER, 'fragmentShader');
+
+      // 4.着色器对象创建完成，开始创建着色器程序 ---------
+      // 创建着色器程序
+      let program = wh.createProgram(gl, vertexShader, fragmentShader);
+      // 链接着色器程序
+      gl.linkProgram(program);
+
+      // 5.一个WebGL应用可能包含多个program，使用某个program绘制前要先启动它 ---------
+      gl.useProgram(program);
+
+      // 6.开始绘制 ---------
+      // 设置清空画布颜色为黑色
+      gl.clearColor(0.0, 0.0, 0.0, 1.0);
+      // 用上一步设置的清空画布颜色清空画布
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      // 绘制点
+      gl.drawArrays(gl.POINTS, 0, 1);
+    </script>
+  </body>
+</html>
