@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebGL第二课：绘制基本三角形</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../../css/common.css">
+</head>
+<body>
+<!-- 顶点着色器源码 -->
+<script type="shader-source" id="vertexShader">
+      // 设置浮点数精度为中等精度
+      precision mediump float;
+      // 接收点坐标系上的坐标（x,y）
+      attribute vec2 a_Position;
+
+      void main() {
+        // 声明顶点位置
+        gl_Position = vec4(a_Position, 0.0, 1.0);
+      }
+
+</script>
+
+<!-- 片元着色器源码 -->
+<script type="shader-source" id=fragmentShader>
+      //浮点数设置为中等精度
+      precision mediump float;
+      //全局变量，用来接收 JavaScript传递过来的颜色。
+      uniform vec4 u_Color;
+      void main(){
+        vec4 color = u_Color / vec4(255, 255, 255, 1);
+        gl_FragColor = color;
+      }
+
+</script>
+
+<canvas id="canvas"></canvas>
+<script type="module">
+import wh from '../../js/webgl-helper.js';
+import util from '../../js/util.js';
+
+let canvas = wh.getCanvas('canvas');
+util.resizeCanvas(canvas);
+let gl = wh.getWebGLContext(canvas);
+
+let vertexShader = wh.createShaderFromScript(gl, gl.VERTEX_SHADER, 'vertexShader');
+let fragmentShader = wh.createShaderFromScript(gl, gl.FRAGMENT_SHADER, 'fragmentShader');
+
+let program = wh.createProgram(gl, vertexShader, fragmentShader);
+gl.useProgram(program);
+
+// 定义三角形的三个顶点
+let positions = [1, 0, 0, 1, 0, 0];
+// 找到顶点着色器中的变量a_Position
+let a_Position = gl.getAttribLocation(program, 'a_Position');
+
+// 创建缓冲器
+let buffer = gl.createBuffer();
+// 绑定该缓冲器为WebGL当前缓冲区
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+// 往当前缓冲区中写入数据
+// 着色器程序中变量需要强类型数据，js弱类型数组要用类型化数组转化一下 --> new Float32Array(positions)
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW); // gl.STATIC_DRAW提示WebGL不会频繁改变缓冲区中的数据，WebGL会根据这个参数做一些优化
+
+// 启用对应属性a_Position
+gl.enableVertexAttribArray(a_Position);
+
+// 设置从缓冲区中取数据的方法 ----- start
+// 每次取两个数据
+const size = 2;
+// 每个数据的类型是32位浮点型
+const type = gl.FLOAT;
+// 不需要归一化数据
+const normalize = false;
+// 每次迭代运行需要移动数据数 * 每个数据所占内存 到下一个数据开始点
+const stride = 0;
+// 从缓冲起始位置开始读取
+const offset = 0;
+// 将a_Position变量获取数据的缓冲区指向当前绑定的buffer
+// 通过gl.vertexAttribPointer将属性绑定到当前缓冲区，即使之后我们用bindBuffer绑定到其它缓冲区，a_Position依旧会从buffer这个缓冲区获取数据
+gl.vertexAttribPointer(a_Position, size, type, normalize, stride, offset);
+// 设置从缓冲区中取数据的方法 ----- end
+
+// 设置清空画布颜色为黑色
+gl.clearColor(0.0, 0.0, 0.0, 1.0);
+// 用上一步设置的清空画布颜色清空画布
+gl.clear(gl.COLOR_BUFFER_BIT);
+
+let u_Color = gl.getUniformLocation(program, 'u_Color');
+let color = util.rendomColor();
+gl.uniform4f(u_Color, color.r, color.g, color.b, color.a);
+
+// 绘制图元设置为三角形
+let primitiveType = gl.TRIANGLES;
+// 从顶点数组的开始位置取顶点数据
+let offset_1 = 0;
+// 要绘制3个点，所以执行三次顶点绘制操作
+let count = 3;
+gl.drawArrays(primitiveType, offset_1, count);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebGL第二课：动态绘制三角形</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../../css/common.css">
+</head>
+<body>
+<!-- 顶点着色器源码 -->
+<script type="shader-source" id="vertexShader">
+      // 设置浮点数精度为中等精度
+      precision mediump float;
+      // 接收点在canvas坐标系上的坐标（x,y）
+      attribute vec2 a_Position;
+      // 接收canvas的宽高尺寸
+      attribute vec2 a_Screen_Size;
+
+      void main() {
+        vec2 position = (a_Position / a_Screen_Size) * 2.0 - 1.0;
+        position = position * vec2(1.0, -1.0);
+        // 声明顶点位置
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+</script>
+
+<!-- 片元着色器源码 -->
+<script type="shader-source" id=fragmentShader>
+      //浮点数设置为中等精度
+      precision mediump float;
+      //全局变量，用来接收 JavaScript传递过来的颜色。
+      uniform vec4 u_Color;
+      void main(){
+        vec4 color = u_Color / vec4(255, 255, 255, 1);
+        gl_FragColor = color;
+      }
+</script>
+
+<canvas id="canvas"></canvas>
+<script type="module">
+import wh from '../../js/webgl-helper.js';
+import util from '../../js/util.js';
+
+let canvas = wh.getCanvas('canvas');
+util.resizeCanvas(canvas);
+let gl = wh.getWebGLContext(canvas);
+
+let vertexShader = wh.createShaderFromScript(gl, gl.VERTEX_SHADER, 'vertexShader');
+let fragmentShader = wh.createShaderFromScript(gl, gl.FRAGMENT_SHADER, 'fragmentShader');
+
+let program = wh.createProgram(gl, vertexShader, fragmentShader);
+gl.useProgram(program);
+
+// 设置颜色
+let u_Color = gl.getUniformLocation(program, 'u_Color');
+let a_Screen_Size = gl.getAttribLocation(program, 'a_Screen_Size');
+let a_Position = gl.getAttribLocation(program, 'a_Position');
+
+gl.vertexAttrib2f(a_Screen_Size, canvas.width, canvas.height);
+
+let positions = [];
+// 创建缓冲器
+let buffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+// gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(a_Position);
+
+// 设置从缓冲区中取数据的方法
+const size = 2;
+const type = gl.FLOAT;
+const normalize = false;
+const stride = 0;
+const offset = 0;
+gl.vertexAttribPointer(a_Position, size, type, normalize, stride, offset);
+
+function render(gl) {
+  // 用上一步设置的清空画布颜色清空画布
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  if (positions.length) {
+    // 给每个三角形绘制不同
+    for (let i = 0; i <= positions.length / 6 - 1; i ++) {
+      let color = util.rendomColor();
+      gl.uniform4f(u_Color, color.r, color.g, color.b, color.a);
+      gl.drawArrays(gl.TRIANGLES, i * 3, 3);
+    }
+  }
+}
+
+canvas.addEventListener('click', e => {
+  positions.push(e.pageX, e.pageY);
+  if (positions.length % 6 === 0) { // 凑齐3个顶点
+    // 向缓冲区中复制新的顶点数据。
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.DYNAMIC_DRAW);
+    // 重新渲染
+    render(gl);
+  }
+});
+
+gl.clearColor(0.0, 0.0, 0.0, 1.0);
+render(gl);
+</script>
+</body>
+</html>
